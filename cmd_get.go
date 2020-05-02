@@ -18,6 +18,8 @@ import (
 
 func cmdGet(client *api.Client) {
 	separator := flag.String("separator", ".", "Data element separator")
+	cshell := flag.Bool("c", false, "Generate C-shell commands on stdout")
+	bourne := flag.Bool("s", false, "Generate Bourne shell commands on stdout")
 	flag.Parse()
 
 	v, err := vault.NewClient(client)
@@ -27,7 +29,18 @@ func cmdGet(client *api.Client) {
 
 	for _, key := range flag.Args() {
 		parts := strings.Split(key, *separator)
-		bag, err := v.Get(parts[0])
+
+		name := parts[0]
+		var kv bool
+		var env string
+		idx := strings.IndexRune(name, '=')
+		if idx > 0 {
+			env = name[:idx]
+			name = name[idx+1:]
+			kv = true
+		}
+
+		bag, err := v.Get(name)
 		if err != nil {
 			log.Fatalf("failed to get secret '%s': %s", key, err)
 		}
@@ -49,11 +62,23 @@ func cmdGet(client *api.Client) {
 				log.Fatalf("can't index %T", element)
 			}
 		}
-		fmt.Printf("%s\n", flatten(0, data))
+
+		if kv {
+			value := flatten(true, 1, data)
+			if *cshell {
+				fmt.Printf("setenv %s %s\n", env, value)
+			} else if *bourne {
+				fmt.Printf("%s=%s; export %s;\n", env, value, env)
+			} else {
+				fmt.Printf("%s=%s\n", env, value)
+			}
+		} else {
+			fmt.Printf("%s\n", flatten(false, 0, data))
+		}
 	}
 }
 
-func flatten(level int, data interface{}) string {
+func flatten(all bool, level int, data interface{}) string {
 	switch element := data.(type) {
 	case map[string]interface{}:
 		var result string
@@ -61,9 +86,13 @@ func flatten(level int, data interface{}) string {
 			if len(result) > 0 {
 				result += ","
 			}
-			result += fmt.Sprintf("%s=%s", k, flatten(level+1, v))
+			result += fmt.Sprintf("%s=%s", k, flatten(all, level+1, v))
 		}
-		return fmt.Sprintf("{%s}", result)
+		if all {
+			return fmt.Sprintf("'{%s}'", result)
+		} else {
+			return fmt.Sprintf("{%s}", result)
+		}
 
 	case string:
 		if level == 0 {
