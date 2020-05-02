@@ -49,11 +49,11 @@ func cmdGet(client *api.Client) {
 				log.Fatalf("can't index %T", element)
 			}
 		}
-		fmt.Printf("%s\n", flatten(data))
+		fmt.Printf("%s\n", flatten(0, data))
 	}
 }
 
-func flatten(data interface{}) string {
+func flatten(level int, data interface{}) string {
 	switch element := data.(type) {
 	case map[string]interface{}:
 		var result string
@@ -61,12 +61,16 @@ func flatten(data interface{}) string {
 			if len(result) > 0 {
 				result += ","
 			}
-			result += fmt.Sprintf("%s=%s", k, flatten(v))
+			result += fmt.Sprintf("%s=%s", k, flatten(level+1, v))
 		}
 		return fmt.Sprintf("{%s}", result)
 
 	case string:
-		return element
+		if level == 0 {
+			return element
+		} else {
+			return fmt.Sprintf("%q", element)
+		}
 
 	default:
 		log.Fatalf("can't flatten %T", element)
