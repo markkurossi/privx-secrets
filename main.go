@@ -60,6 +60,7 @@ func (cert *Certificate) UnmarshalText(text []byte) error {
 
 var commands = map[string]func(client *api.Client){
 	"login": cmdLogin,
+	"get":   cmdGet,
 }
 
 func main() {
@@ -87,7 +88,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	client, err := api.NewClient(auth)
+	client, err := api.NewClient(auth, config.API.Endpoint,
+		config.API.Certificate.X509, config.Verbose)
 	if err != nil {
 		log.Fatal(err)
 	}

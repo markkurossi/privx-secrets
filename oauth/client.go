@@ -38,11 +38,11 @@ type Config struct {
 }
 
 type Client struct {
+	endpoint       string
 	m              *sync.Mutex
 	c              *sync.Cond
 	authPending    bool
 	config         Config
-	endpoint       string
 	http           *http.Client
 	httpNoRedirect *http.Client
 	token          *AccessToken
