@@ -31,9 +31,8 @@ var (
 )
 
 type Config struct {
-	Verbose bool
-	API     APIConfig
-	Auth    oauth.Config
+	API  APIConfig
+	Auth oauth.Config
 }
 
 type APIConfig struct {
@@ -75,21 +74,47 @@ func main() {
 		defaultConfig = path.Join(home, fmt.Sprintf(".%s", configFileName))
 	}
 
+	apiEndpoint := flag.String("api", "", "API endpoint URL")
 	configFile := flag.String("config", defaultConfig, "configuration file")
+	verbose := flag.Bool("v", false, "verbose output")
 	flag.Parse()
 
+	// First, read config file.
 	if err := readConfig(*configFile); err != nil {
 		log.Fatalf("failed to read config file '%s': %s", *configFile, err)
 	}
 
+	// Next, apply environment overrides.
+	val, ok := os.LookupEnv("OAUTH_CLIENT_ID")
+	if ok {
+		config.Auth.ClientID = val
+	}
+	val, ok = os.LookupEnv("OAUTH_CLIENT_SECRET")
+	if ok {
+		config.Auth.ClientSecret = val
+	}
+	val, ok = os.LookupEnv("API_CLIENT_ID")
+	if ok {
+		config.Auth.APIClientID = val
+	}
+	val, ok = os.LookupEnv("API_CLIENT_SECRET")
+	if ok {
+		config.Auth.APIClientSecret = val
+	}
+
+	// Finally, command line overrides.
+	if len(*apiEndpoint) > 0 {
+		config.API.Endpoint = *apiEndpoint
+	}
+
 	// Construct API client.
 	auth, err := oauth.NewClient(config.Auth, config.API.Endpoint,
-		config.API.Certificate.X509, config.Verbose)
+		config.API.Certificate.X509, *verbose)
 	if err != nil {
 		log.Fatal(err)
 	}
 	client, err := api.NewClient(auth, config.API.Endpoint,
-		config.API.Certificate.X509, config.Verbose)
+		config.API.Certificate.X509, *verbose)
 	if err != nil {
 		log.Fatal(err)
 	}
