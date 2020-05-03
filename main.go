@@ -63,6 +63,22 @@ var commands = map[string]func(client *api.Client){
 }
 
 func main() {
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr,
+			"Usage: %s [options] COMMAND [command options] [ARG]...\n",
+			os.Args[0])
+		fmt.Fprintf(os.Stderr, "\nOptions:\n")
+		flag.PrintDefaults()
+
+		fmt.Fprintf(os.Stderr, "\nCommands:\n")
+		for key := range commands {
+			fmt.Fprintf(os.Stderr, "  - %s\n", key)
+		}
+		fmt.Fprintf(os.Stderr,
+			"\nType %s COMMAND -h for help about COMMAND\n",
+			os.Args[0])
+	}
+
 	var defaultConfig string
 
 	home, err := os.UserHomeDir()
@@ -120,10 +136,7 @@ func main() {
 	}
 
 	if len(flag.Args()) == 0 {
-		fmt.Printf("No command specified. Possible commands are\n")
-		for key := range commands {
-			fmt.Printf(" - %s\n", key)
-		}
+		fmt.Fprintf(os.Stderr, "No command specified.\n")
 		return
 	}
 	os.Args = flag.Args()
