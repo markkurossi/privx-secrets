@@ -6,7 +6,7 @@ vault.
 
 # Synopsis
 
-    privx-secrets [**-api** _endpoint_] [**-config** _file_] [**-v**] _command_ _command arguments_
+privx-secrets [**-api** _endpoint_] [**-config** _file_] [**-v**] _command_ _command arguments_
 
 The `privx-secrets` accepts the following arguments which apply for
 all commands:
@@ -57,7 +57,7 @@ Getting multiple named values:
     PASSWORD="very secret database password"
 
 The `-c` or `-s` options makes it easy to pull multiple values and
-bind them in your shell script:
+bind them in shell scripts:
 
     $ eval `privx-secrets get -s USERNAME=database.auth_password.username PASSWORD=database.auth_password.password`
     $ echo $USERNAME
@@ -65,7 +65,7 @@ bind them in your shell script:
     $ echo $PASSWORD
     very secret database password
 
-Getting configuration blobs with automated valued _spreading_:
+Getting configuration blobs with automated value _spreading_:
 
     $ ./privx-secrets get -spread DB=database
     DB_url="postgresql://proddb.ssh.com:5432"
