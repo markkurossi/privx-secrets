@@ -18,6 +18,7 @@ import (
 
 func cmdGet(client *api.Client) {
 	separator := flag.String("separator", ".", "Data element separator")
+	spread := flag.Bool("spread", false, "Spread compounds types")
 	cshell := flag.Bool("c", false, "Generate C-shell commands on stdout")
 	bourne := flag.Bool("s", false, "Generate Bourne shell commands on stdout")
 	flag.Parse()
@@ -63,18 +64,47 @@ func cmdGet(client *api.Client) {
 			}
 		}
 
-		if kv {
-			value := flatten(true, 0, data)
-			if *cshell {
-				fmt.Printf("setenv %s %s\n", env, value)
-			} else if *bourne {
-				fmt.Printf("%s=%s; export %s;\n", env, value, env)
-			} else {
-				fmt.Printf("%s=%s\n", env, value)
+		if *spread {
+			var path []string
+			if kv {
+				path = append(path, env)
 			}
+			spreadCompound(path, *cshell, *bourne, data)
+		} else if kv {
+			value := flatten(true, 0, data)
+			printKV(env, value, *cshell, *bourne)
 		} else {
 			fmt.Printf("%s\n", flatten(false, 0, data))
 		}
+	}
+}
+
+func printKV(k, v string, cshell, bourne bool) {
+	if cshell {
+		fmt.Printf("setenv %s %s\n", k, v)
+	} else if bourne {
+		fmt.Printf("%s=%s; export %s;\n", k, v, k)
+	} else {
+		fmt.Printf("%s=%s\n", k, v)
+	}
+}
+
+func spreadCompound(path []string, cshell, bourne bool, data interface{}) {
+	switch element := data.(type) {
+	case map[string]interface{}:
+		for k, v := range element {
+			spreadCompound(append(path, k), cshell, bourne, v)
+		}
+
+	case string:
+		if len(path) == 0 {
+			log.Fatalf("can't spread element '%s' without prefix", element)
+		}
+		printKV(strings.Join(path, "_"), fmt.Sprintf("%q", element),
+			cshell, bourne)
+
+	default:
+		log.Fatalf("can't spread %T", element)
 	}
 }
 
