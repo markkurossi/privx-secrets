@@ -64,7 +64,7 @@ func cmdGet(client *api.Client) {
 		}
 
 		if kv {
-			value := flatten(true, 1, data)
+			value := flatten(true, 0, data)
 			if *cshell {
 				fmt.Printf("setenv %s %s\n", env, value)
 			} else if *bourne {
@@ -88,17 +88,17 @@ func flatten(all bool, level int, data interface{}) string {
 			}
 			result += fmt.Sprintf("%s=%s", k, flatten(all, level+1, v))
 		}
-		if all {
-			return fmt.Sprintf("'{%s}'", result)
+		if level == 0 && all {
+			return fmt.Sprintf("%q", "{"+result+"}")
 		} else {
 			return fmt.Sprintf("{%s}", result)
 		}
 
 	case string:
-		if level == 0 {
-			return element
-		} else {
+		if all {
 			return fmt.Sprintf("%q", element)
+		} else {
+			return element
 		}
 
 	default:
